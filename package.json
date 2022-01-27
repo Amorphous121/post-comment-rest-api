@@ -1,0 +1,32 @@
+{
+  "name": "post-comment-rest-api",
+  "version": "1.0.0",
+  "description": "Production Grade Rest api demo using node and mongodb",
+  "main": "src/index.js",
+  "author": "Prathamesh Patil",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start:prod": "cross-env NODE_ENV=production node src/index.js",
+    "start:stage": "cross-env NODE_ENV=staging node src/index.js",
+    "start:dev": "cross-env NODE_ENV=development nodemon src/index.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "cross-env": "^7.0.3",
+    "dotenv": "^14.3.2",
+    "express": "^4.17.2",
+    "express-async-errors": "^3.1.1",
+    "express-validation": "^3.0.8",
+    "jsonwebtoken": "^8.5.1",
+    "migrate-mongo": "^8.2.3",
+    "mongoose": "^6.1.8",
+    "morgan": "^1.10.0",
+    "passport": "^0.5.2",
+    "passport-jwt": "^4.0.0",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}
