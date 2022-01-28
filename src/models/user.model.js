@@ -9,7 +9,7 @@ const UserSchema = new mongoose.Schema({
   lastName    :   { type: String, required: true },
   email       :   { type: String, required: true, lowercase: true },
   password    :   { type: String, required: true },
-  role        :   { type: String, required: true },
+  role        :   { type: String, default: 'user' },
   posts       :   [{ type: ObjectId, ref: 'post' }],
   comments    :   [{ type: ObjectId, ref: 'comment' }],
   isDeleted   :   { type: Boolean, default: false },
@@ -23,6 +23,7 @@ UserSchema.methods.comparePassword = function (password) {
 
 UserSchema.pre('save', async function (next) {
   this.password = await bcrypt.hash(this.password, appConfig.bcryptRounds);
+  next();
 });
 
 module.exports = mongoose.model('user', UserSchema, 'users');

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { dbUrl } = require('./appConfig');
+const dbUrl = process.env.DATABASE_URL;
 
 const connectDatabase = () => mongoose.connect(dbUrl);
 
