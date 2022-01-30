@@ -4,7 +4,7 @@ function sendJson(response, statusCode = 200) {
   responsePayload['status'] = status;
   if (typeof response === 'string') responsePayload['message'] = response;
   else if (typeof response === 'object') responsePayload['data'] = response;
-  return this.statusCode(statusCode).json(responsePayload);
+  return this.status(statusCode).json(responsePayload);
 }
 
 module.exports = sendJson;
