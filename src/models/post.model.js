@@ -10,6 +10,6 @@ const PostSchema = new mongoose.Schema({
   isDeleted   :   { type: Boolean, default: false },
   deletedAt   :   { type: Date, default: null },
   deletedBy   :   { type: ObjectId, ref: 'user' },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('post', PostSchema ,'posts');
