@@ -1,15 +1,19 @@
 const { User } = require('../models');
+const APIError = require('../utils/APIError');
+const { removeFields } = require('../utils/helper');
 
 exports.createUser = async (req, res) => {
   const { email } = req.body;
   console.log(req.body);
-  const user = await User.findOne({ email, isDeleted: false });
-  if (user) {
-    return res.status(400).json({ message: 'User already exists' });
+  const isUserExists = await User.exists({ email, isDeleted: false });
+  if (isUserExists) {
+    return res
+      .status(400)
+      .json({ message: `User with ${email} already exists` });
   }
 
-  const newUser = await User.create(req.body);
-  return res.status(201).json(newUser);
+  const user = await User.create(req.body);
+  return res.sendJson(removeFields(user, ['password']), 201);
 };
 
 exports.getAllUsers = async (req, res, next) => {
@@ -22,7 +26,10 @@ exports.getAllUsers = async (req, res, next) => {
     queryObject.firstName = new RegExp(`${queryObject.firstName}`, 'ig');
   }
 
-  let query = User.find({ ...queryObject, isDeleted: false }, { password: 0 });
+  let query = User.find(
+    { ...queryObject, isDeleted: false },
+    '-password, -isDeleted -deletedAt -deletedBy'
+  );
 
   /* 2) Sorting */
   if (req.query.sort) {
@@ -53,12 +60,15 @@ exports.getAllUsers = async (req, res, next) => {
   }
 
   const users = await query;
-  return res.status(200).json(users);
+  return res.sendJson(users);
 };
 
 exports.getUserById = async (req, res, next) => {
   const _id = req.params.id;
-  let query = User.findOne({ _id, isDeleted: false }, { password: 0 });
+  let query = User.findOne(
+    { _id, isDeleted: false },
+    '-password, -isDeleted -deletedAt -deletedBy'
+  );
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
@@ -67,12 +77,16 @@ exports.getUserById = async (req, res, next) => {
   }
 
   const user = await query;
-  if (!user) return res.status(400).json({ message: 'User not found' });
+  if (!user)
+    throw new APIError({
+      status: 404,
+      message: 'No such user found with given Id.',
+    });
   return res.status(200).json(user);
 };
 
 exports.updateUser = async (req, res, next) => {
-
+  const payload = req.body;
 };
 
 exports.deleteUser = async (req, res, next) => {};

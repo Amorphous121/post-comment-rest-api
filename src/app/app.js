@@ -1,6 +1,6 @@
 const express = require('express');
 const logger = require('morgan');
-const sendJson = require('../middleware/res-serializer');
+const { sendJson, errorHandler } = require('../middleware');
 require('express-async-errors');
 require('../middleware');
 
@@ -15,15 +15,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(logger(logType));
 app.use(indexRouter);
-app.use((req, res, next) => {
-  next(new Error('Page not found.'));
-});
-app.use((err, req, res, next) => {
-  res.status(err.status || 500);
-  res.json({
-    status: false,
-    message: err.message,
-  });
-});
+
+/* Error Handling middleware stack */
+app.use(errorHandler.notFoundHandler);
+app.use(errorHandler.convertError);
+app.use(errorHandler.handler);
 
 module.exports = app;

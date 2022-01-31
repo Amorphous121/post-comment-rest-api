@@ -1,6 +1,7 @@
 const userRouter = require('express').Router();
 const { validate } = require('express-validation');
 const { isAuth, hasRole } = require('../middleware/auth-middleware');
+
 const { UserController } = require('../controllers');
 const { ROLE_TYPE } = require('../utils/enums');
 const {

@@ -16,3 +16,11 @@ exports.issueToken = data => {
     );
   });
 };
+
+exports.removeFields = (object, keys = [], defaultFields = true) => {
+  const basicFields = ['deletedAt', 'deletedBy', 'isDeleted'];
+  keys = typeof keys === 'string' ? [keys] : keys || [];
+  if (defaultFields) keys.concat(basicFields);
+  keys.forEach(key => delete object[key]);
+  return object;
+};
