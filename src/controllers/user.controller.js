@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User, Post, Comment } = require('../models');
 const APIError = require('../utils/APIError');
 const { removeFields } = require('../utils/helper');
 
@@ -87,6 +87,47 @@ exports.getUserById = async (req, res, next) => {
 
 exports.updateUser = async (req, res, next) => {
   const payload = req.body;
+  if (req.params._id !== req.user._id) {
+    throw new APIError({
+      status: 403,
+      message: "You are not privileged to update other user's data.",
+    });
+  }
+
+  const user = await User.findOneAndUpdate({ _id: req.params._id }, payload, {
+    new: true,
+  });
+  return res.sendJson(
+    removeFields(user, ['password', 'posts', 'comments']),
+    200
+  );
 };
 
-exports.deleteUser = async (req, res, next) => {};
+exports.deleteUser = async (req, res, next) => {
+  if (req.params._id !== req.user._id && req.user.role !== 'admin') {
+    throw new APIError({
+      status: 403,
+      message: "You are not privileged to delete other user's data.",
+    });
+  }
+
+  const updateData = {
+    isDeleted: true,
+    deletedAt: new Date(),
+    deletedBy: req.user._id,
+  };
+  const user = await User.findOneAndUpdate(
+    { _id: req.params._id },
+    updateData,
+    { new: true }
+  ).lean();
+
+  await Post.updateMany(
+    { author: user._id, isDeleted: false },
+    updateData
+  ).lean();
+  await Comment.updateMany(
+    { createdBy: user._id, isDeleted: false },
+    updateData
+  ).lean();
+};
