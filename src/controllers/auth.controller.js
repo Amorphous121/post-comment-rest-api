@@ -3,9 +3,6 @@ const { User } = require('../models');
 const { issueToken } = require('../utils/helper');
 
 exports.login = async (req, res, next) => {
-
-  console.log('in controller');
-
   passport.authenticate('local', async (err, user, info) => {
     if (err || !user) {
       const error = new Error('Invalid Credentials.');

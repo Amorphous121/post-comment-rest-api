@@ -20,7 +20,9 @@ exports.updateUser = {
     firstName: Joi.string().min(3),
     lastName: Joi.string().min(3),
     email: Joi.string().lowercase().email(),
-  }).required().not({})
+  })
+    .required()
+    .not({}),
 };
 
 exports.deleteUser = {

@@ -1,11 +1,11 @@
 const { User, Post, Comment } = require('../models');
 const APIError = require('../utils/APIError');
-const { removeFields } = require('../utils/helper');
+const { removeFields, userIsAdmin } = require('../utils/helper');
 
 exports.createUser = async (req, res) => {
   const { email } = req.body;
   console.log(req.body);
-  const isUserExists = await User.exists({ email, isDeleted: false });
+  const isUserExists = await User.exists({ email });
   if (isUserExists) {
     return res
       .status(400)
@@ -27,7 +27,7 @@ exports.getAllUsers = async (req, res, next) => {
   }
 
   let query = User.find(
-    { ...queryObject, isDeleted: false },
+    { ...queryObject },
     '-password, -isDeleted -deletedAt -deletedBy'
   );
 
@@ -55,7 +55,7 @@ exports.getAllUsers = async (req, res, next) => {
   query = query.skip(skip).limit(limit);
 
   if (req.query.page) {
-    const numOfRecords = await User.countDocuments({ isDeleted: false });
+    const numOfRecords = await User.countDocuments();
     if (skip >= numOfRecords) throw new Error("This page doesn't exists");
   }
 
@@ -66,7 +66,7 @@ exports.getAllUsers = async (req, res, next) => {
 exports.getUserById = async (req, res, next) => {
   const _id = req.params.id;
   let query = User.findOne(
-    { _id, isDeleted: false },
+    { _id },
     '-password, -isDeleted -deletedAt -deletedBy'
   );
   if (req.query.fields) {
@@ -87,14 +87,14 @@ exports.getUserById = async (req, res, next) => {
 
 exports.updateUser = async (req, res, next) => {
   const payload = req.body;
-  if (req.params._id !== req.user._id) {
+  if (req.params.id !== req.user._id) {
     throw new APIError({
       status: 403,
       message: "You are not privileged to update other user's data.",
     });
   }
 
-  const user = await User.findOneAndUpdate({ _id: req.params._id }, payload, {
+  const user = await User.findOneAndUpdate({ _id: req.params.id }, payload, {
     new: true,
   });
   return res.sendJson(
@@ -104,7 +104,7 @@ exports.updateUser = async (req, res, next) => {
 };
 
 exports.deleteUser = async (req, res, next) => {
-  if (req.params._id !== req.user._id && req.user.role !== 'admin') {
+  if (req.params.id !== req.user._id && !userIsAdmin(req.user)) {
     throw new APIError({
       status: 403,
       message: "You are not privileged to delete other user's data.",
@@ -116,18 +116,12 @@ exports.deleteUser = async (req, res, next) => {
     deletedAt: new Date(),
     deletedBy: req.user._id,
   };
-  const user = await User.findOneAndUpdate(
-    { _id: req.params._id },
-    updateData,
-    { new: true }
-  ).lean();
+  const user = await User.findOneAndUpdate({ _id: req.params.id }, updateData, {
+    new: true,
+  }).lean();
 
-  await Post.updateMany(
-    { author: user._id, isDeleted: false },
-    updateData
-  ).lean();
-  await Comment.updateMany(
-    { createdBy: user._id, isDeleted: false },
-    updateData
-  ).lean();
+  await Post.updateMany({ author: user._id }, updateData).lean();
+  await Comment.updateMany({ createdBy: user._id }, updateData).lean();
+
+  return res.sendJson('User deleted successfully', 200);
 };

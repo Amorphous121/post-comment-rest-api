@@ -1,26 +1,24 @@
-const { Post, User } = require('../models');
+const { Post, User, Comment } = require('../models');
 const APIError = require('../utils/APIError');
-const { removeFields } = require('../utils/helper');
+const { removeFields, userIsAdmin } = require('../utils/helper');
 
 exports.createPost = async (req, res) => {
   const payload = req.body;
   const post = await Post.create({ ...payload, author: req.user._id });
   await User.findOneAndUpdate(
-    { _id: req.user._id, isDeleted: false },
+    { _id: req.user._id },
     { $addToSet: { posts: post._id } }
   );
   return res.sendJson(removeFields(post), 201);
 };
+
 exports.getAllPosts = async (req, res, next) => {
   const queryObject = { ...req.query };
   /* Basic Filtering */
   const excludeFields = ['page', 'sort', 'limit', 'fields'];
   excludeFields.forEach(el => delete queryObject[el]);
 
-  let query = Post.find(
-    { ...queryObject, isDeleted: false },
-    '-isDeleted -deletedAt -deletedBy'
-  );
+  let query = Post.find({ ...queryObject }, '-isDeleted -deletedAt -deletedBy');
 
   /* Sorting */
   if (req.query.sort) {
@@ -46,7 +44,7 @@ exports.getAllPosts = async (req, res, next) => {
   query = query.skip(skip).limit(limit);
 
   if (req.query.page) {
-    const numOfRecords = await Post.countDocuments({ isDeleted: false });
+    const numOfRecords = await Post.countDocuments();
     if (skip >= numOfRecords)
       throw new APIError({ status: 404, message: "This page doesn't exist." });
   }
@@ -55,11 +53,8 @@ exports.getAllPosts = async (req, res, next) => {
 };
 
 exports.getPostById = async (req, res, next) => {
-  const _id = req.params._id;
-  let query = Post.findOne(
-    { _id, isDeleted: false },
-    '-isDeleted -deletedAt -deletedBy'
-  );
+  const _id = req.params.id;
+  let query = Post.findOne({ _id }, '-isDeleted -deletedAt -deletedBy');
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
@@ -74,5 +69,43 @@ exports.getPostById = async (req, res, next) => {
     });
   return res.sendJson(post);
 };
-exports.updatePost = async (req, res, next) => {};
-exports.deletePost = async (req, res, next) => {};
+
+exports.updatePost = async (req, res, next) => {
+  const isPostExists = await Post.exists({
+    _id: req.params.id,
+    author: req.user._id,
+  });
+
+  if (!isPostExists) {
+    throw new APIError({ status: 404, message: 'No such post exists.' });
+  }
+
+  const post = await Post.findOneAndUpdate({ _id: req.params.id }, req.body, {
+    new: true,
+  });
+  return res.sendJson(removeFields(post), 200);
+};
+
+exports.deletePost = async (req, res, next) => {
+  const isPostExists = await Post.exists({
+    _id: req.params.id,
+    author: req.user._id,
+  });
+
+  if (!isPostExists || !userIsAdmin(req.user)) {
+    throw new APIError({
+      status: 404,
+      message: 'You are not privileged to delete other posts.',
+    });
+  }
+
+  const updatePayload = {
+    isDeleted: true,
+    deletedBy: req.user._id,
+    deletedAt: new Date(),
+  };
+  await Comment.updateMany({ post: req.params.id }, updatePayload);
+  await Post.findOneAndUpdate({ _id: req.params.id }, updatePayload);
+
+  return res.sendJson('Post deleted successfully.', 200);
+};

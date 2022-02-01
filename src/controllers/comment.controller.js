@@ -5,7 +5,6 @@ exports.createComment = async (req, res, next) => {
   const payload = req.body;
   const isPostExists = await Post.exists({
     _id: payload.post,
-    isDeleted: false,
   });
   if (!isPostExists)
     throw new APIError({ status: 400, message: 'No such post exits.' });
@@ -24,7 +23,14 @@ exports.createComment = async (req, res, next) => {
   );
   return res.sendJson(comment, 201);
 };
-exports.getAllComments = async (req, res, next) => {};
+
+exports.getAllComments = async (req, res, next) => {
+  const queryObject = { ...req.query };
+  const excludedFields = ['page', 'sort', 'limit', 'fields'];
+  excludedFields.forEach(el => delete queryObject[el]);
+
+  let query = Comment.find({ ...queryObject });
+};
 exports.getCommentById = async (req, res, next) => {};
 exports.updateComment = async (req, res, next) => {};
 exports.deleteComment = async (req, res, next) => {};

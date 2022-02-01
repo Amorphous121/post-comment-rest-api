@@ -14,7 +14,7 @@ server.listen(appConfig.port, () => {
       '\n',
       chalk.bgRedBright.whiteBright(`Server status    `),
       chalk.bgGreen.whiteBright(`   Connected At ${appConfig.port}   `),
-      "\n"
+      '\n'
     );
   });
 });

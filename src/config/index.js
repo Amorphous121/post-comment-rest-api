@@ -3,5 +3,5 @@ const connectDatabase = require('./connectDB');
 
 module.exports = {
   appConfig,
-  connectDatabase
+  connectDatabase,
 };

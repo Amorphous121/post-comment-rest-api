@@ -29,4 +29,11 @@ UserSchema.pre('save', async function (next) {
   next();
 });
 
+UserSchema.pre(/\b(find|findOne|exists|countDocuments)\b/, function (next) {
+  if (!this._conditions['isDeleted']) {
+    this._conditions['isDeleted'] = false;
+  }
+  next();
+});
+
 module.exports = mongoose.model('user', UserSchema, 'users');

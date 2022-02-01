@@ -24,3 +24,5 @@ exports.removeFields = (object, keys = [], defaultFields = true) => {
   keys.forEach(key => delete object[key]);
   return object;
 };
+
+exports.userIsAdmin = user => user.role === 'admin';

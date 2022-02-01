@@ -9,5 +9,4 @@ module.exports = {
   sendJson,
   errorHandler,
   passportConfig,
-  authMiddleware,
 };
