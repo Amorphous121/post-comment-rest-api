@@ -56,7 +56,8 @@ exports.getAllUsers = async (req, res, next) => {
 
   if (req.query.page) {
     const numOfRecords = await User.countDocuments();
-    if (skip >= numOfRecords) throw new Error("This page doesn't exists");
+    if (skip >= numOfRecords)
+      throw new APIError({ message: "This page doesn't exists.", status: 404 });
   }
 
   const users = await query;
@@ -82,7 +83,7 @@ exports.getUserById = async (req, res, next) => {
       status: 404,
       message: 'No such user found with given Id.',
     });
-  return res.status(200).json(user);
+  return res.sendJson(user);
 };
 
 exports.updateUser = async (req, res, next) => {
