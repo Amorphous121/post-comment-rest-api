@@ -1,6 +1,10 @@
-const { Post, User, Comment } = require('../models');
 const APIError = require('../utils/APIError');
-const { removeFields, userIsAdmin } = require('../utils/helper');
+const { Post, User, Comment } = require('../models');
+const {
+  removeFields,
+  userIsAdmin,
+  removeFieldsFromArrayOfObjects,
+} = require('../utils/helper');
 
 exports.createPost = async (req, res) => {
   const payload = req.body;
@@ -8,19 +12,17 @@ exports.createPost = async (req, res) => {
   await User.findOneAndUpdate(
     { _id: req.user._id },
     { $addToSet: { posts: post._id } }
-  );
+  ).lean();
   return res.sendJson(removeFields(post), 201);
 };
 
 exports.getAllPosts = async (req, res, next) => {
   const queryObject = { ...req.query };
-  /* Basic Filtering */
   const excludeFields = ['page', 'sort', 'limit', 'fields'];
   excludeFields.forEach(el => delete queryObject[el]);
 
-  let query = Post.find({ ...queryObject }, '-isDeleted -deletedAt -deletedBy');
+  let query = Post.find({ ...queryObject });
 
-  /* Sorting */
   if (req.query.sort) {
     const sortBy = req.query.sort.split(',').join(' ');
     query = query.sort(sortBy);
@@ -28,7 +30,6 @@ exports.getAllPosts = async (req, res, next) => {
     query = query.sort('-createdAt');
   }
 
-  /* Limiting the fields */
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
@@ -36,7 +37,6 @@ exports.getAllPosts = async (req, res, next) => {
     query = query.select('-__v');
   }
 
-  /* Pagination */
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || 10;
   const skip = (page - 1) * limit;
@@ -49,12 +49,13 @@ exports.getAllPosts = async (req, res, next) => {
       throw new APIError({ status: 404, message: "This page doesn't exist." });
   }
   const posts = await query;
-  return res.sendJson(posts);
+  return res.sendJson(removeFieldsFromArrayOfObjects(posts));
 };
 
 exports.getPostById = async (req, res, next) => {
   const _id = req.params.id;
   let query = Post.findOne({ _id }, '-isDeleted -deletedAt -deletedBy');
+
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
@@ -92,7 +93,7 @@ exports.deletePost = async (req, res, next) => {
     author: req.user._id,
   });
 
-  if (!isPostExists || !userIsAdmin(req.user)) {
+  if (!isPostExists && !userIsAdmin(req.user)) {
     throw new APIError({
       status: 404,
       message: 'You are not privileged to delete other posts.',

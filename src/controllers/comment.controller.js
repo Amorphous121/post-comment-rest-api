@@ -1,5 +1,5 @@
 const { Comment, User, Post } = require('../models');
-const { userIsAdmin } = require('../utils/helper');
+const { userIsAdmin, removeFields } = require('../utils/helper');
 const APIError = require('../utils/APIError');
 
 exports.createComment = async (req, res, next) => {
@@ -7,17 +7,21 @@ exports.createComment = async (req, res, next) => {
   const isPostExists = await Post.exists({
     _id: payload.post,
   });
+
   if (!isPostExists)
     throw new APIError({ status: 400, message: 'No such post exits.' });
+
   const comment = await Comment.create({
     comment: payload.comment,
     createdBy: req.user._id,
     post: payload.post,
   });
+
   await Post.findOneAndUpdate(
     { _id: payload.post },
     { $addToSet: { comments: comment._id } }
   );
+
   await User.findOneAndUpdate(
     { _id: req.user._id },
     { $addToSet: { comments: comment._id } }
@@ -82,7 +86,7 @@ exports.getCommentById = async (req, res, next) => {
       message: 'No such comment found with given Id',
     });
   }
-  return res.sendJson(comment);
+  return res.sendJson(removeFields(comment));
 };
 
 exports.updateComment = async (req, res, next) => {
@@ -135,6 +139,7 @@ exports.deleteComment = async (req, res, next) => {
       { $set: updatePayload },
       { new: true }
     );
+    return res.sendJson("Comment Deleted successfully.");
   } else {
     throw new APIError({
       status: 403,

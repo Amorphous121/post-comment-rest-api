@@ -1,10 +1,13 @@
 const { User, Post, Comment } = require('../models');
 const APIError = require('../utils/APIError');
-const { removeFields, userIsAdmin } = require('../utils/helper');
+const {
+  removeFields,
+  userIsAdmin,
+  removeFieldsFromArrayOfObjects,
+} = require('../utils/helper');
 
 exports.createUser = async (req, res) => {
   const { email } = req.body;
-  console.log(req.body);
   const isUserExists = await User.exists({ email });
   if (isUserExists) {
     return res
@@ -13,11 +16,10 @@ exports.createUser = async (req, res) => {
   }
 
   const user = await User.create(req.body);
-  return res.sendJson(removeFields(user, ['password']), 201);
+  return res.sendJson(removeFields(user.toObject(), ['password']), 201);
 };
 
 exports.getAllUsers = async (req, res, next) => {
-  /* 1A) Basic Filtering */
   let queryObject = { ...req.query };
   const excludeFields = ['page', 'sort', 'limit', 'fields'];
   excludeFields.forEach(el => delete queryObject[el]);
@@ -26,10 +28,9 @@ exports.getAllUsers = async (req, res, next) => {
     queryObject.firstName = new RegExp(`${queryObject.firstName}`, 'ig');
   }
 
-  let query = User.find(
-    { ...queryObject },
-    '-password, -isDeleted -deletedAt -deletedBy'
-  );
+  let query = User.find({ ...queryObject })
+    .populate('posts', '-isDeleted -deletedAt -__v')
+    .populate('comments', '-isDeleted -deletedAt -__v');
 
   /* 2) Sorting */
   if (req.query.sort) {
@@ -61,7 +62,9 @@ exports.getAllUsers = async (req, res, next) => {
   }
 
   const users = await query;
-  return res.sendJson(users);
+  return res.sendJson(
+    removeFieldsFromArrayOfObjects(users, ['password'], true)
+  );
 };
 
 exports.getUserById = async (req, res, next) => {
@@ -69,7 +72,10 @@ exports.getUserById = async (req, res, next) => {
   let query = User.findOne(
     { _id },
     '-password, -isDeleted -deletedAt -deletedBy'
-  );
+  )
+    .populate({ path: 'posts', match: { isDeleted: false } })
+    .populate({ path: 'comments', match: { isDeleted: false } });
+
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
@@ -88,14 +94,29 @@ exports.getUserById = async (req, res, next) => {
 
 exports.updateUser = async (req, res, next) => {
   const payload = req.body;
-  if (req.params.id !== req.user._id) {
+  const _id = req.params.id;
+
+  if (_id !== req.user._id) {
     throw new APIError({
       status: 403,
       message: "You are not privileged to update other user's data.",
     });
   }
 
-  const user = await User.findOneAndUpdate({ _id: req.params.id }, payload, {
+  if (payload.email) {
+    const userInfo = await User.exists({
+      _id: { $ne: _id },
+      email: payload.email,
+    });
+
+    if (userInfo)
+      throw new APIError({
+        status: 400,
+        message: 'Email is already in use by other user.',
+      });
+  }
+
+  const user = await User.findOneAndUpdate({ _id }, payload, {
     new: true,
   });
   return res.sendJson(
@@ -105,7 +126,9 @@ exports.updateUser = async (req, res, next) => {
 };
 
 exports.deleteUser = async (req, res, next) => {
-  if (req.params.id !== req.user._id && !userIsAdmin(req.user)) {
+  const _id = req.params.id;
+
+  if (_id !== req.user._id && !userIsAdmin(req.user)) {
     throw new APIError({
       status: 403,
       message: "You are not privileged to delete other user's data.",
@@ -117,12 +140,16 @@ exports.deleteUser = async (req, res, next) => {
     deletedAt: new Date(),
     deletedBy: req.user._id,
   };
-  const user = await User.findOneAndUpdate({ _id: req.params.id }, updateData, {
+
+  const user = await User.findOneAndUpdate({ _id }, updateData, {
     new: true,
   }).lean();
 
   await Post.updateMany({ author: user._id }, updateData).lean();
-  await Comment.updateMany({ createdBy: user._id }, updateData).lean();
+  await Comment.updateMany(
+    { $or: [{ createdBy: user._id }, { post: { $in: user.posts } }] },
+    updateData
+  ).lean();
 
   return res.sendJson('User deleted successfully', 200);
 };

@@ -6,7 +6,7 @@ exports.createUser = {
     firstName: Joi.string().min(3).required(),
     lastName: Joi.string().min(3).required(),
     email: Joi.string().email().lowercase().required(),
-    password: Joi.string().min(4).alphanum().required(),
+    password: Joi.string().min(4).required(),
   }),
 };
 

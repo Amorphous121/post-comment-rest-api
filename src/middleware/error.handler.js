@@ -15,8 +15,10 @@ exports.handler = (err, req, res, next) => {
     err.message = 'Something went wrong. Please try again later.';
   }
   if (process.env.NODE_ENV === 'development') {
+    console.log('\n---------------------------------------------');
     if (err.stack) console.log(err.stack);
     if (err.errors) console.log(err.errors);
+    console.log('\n---------------------------------------------\n');
   }
   return res.sendJson(message, err.status);
 };

@@ -19,9 +19,6 @@ module.exports = {
       adminData.password,
       parseInt(process.env.BCRYPT_SALT_ROUNDS)
     );
-
-    console.log(adminData);
-
     await db.collection('users').insertOne(adminData);
   },
 
