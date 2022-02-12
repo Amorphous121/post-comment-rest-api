@@ -1,5 +1,5 @@
 const { Comment, User, Post } = require('../models');
-const { userIsAdmin, removeFields } = require('../utils/helper');
+const { userIsAdmin, removeFields, removeFieldsFromArrayOfObjects } = require('../utils/helper');
 const APIError = require('../utils/APIError');
 
 exports.createComment = async (req, res, next) => {
@@ -20,13 +20,13 @@ exports.createComment = async (req, res, next) => {
   await Post.findOneAndUpdate(
     { _id: payload.post },
     { $addToSet: { comments: comment._id } }
-  );
+  ).lean();
 
   await User.findOneAndUpdate(
     { _id: req.user._id },
     { $addToSet: { comments: comment._id } }
-  );
-  return res.sendJson(comment, 201);
+  ).lean();
+  return res.sendJson(removeFields(comment), 201);
 };
 
 exports.getAllComments = async (req, res, next) => {
@@ -49,8 +49,6 @@ exports.getAllComments = async (req, res, next) => {
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
-  } else {
-    query = query.select('-__v');
   }
 
   const page = req.query.page * 1 || 1;
@@ -64,8 +62,8 @@ exports.getAllComments = async (req, res, next) => {
     if (skip >= numOfRecords)
       throw new APIError({ message: "This page doesn't exists.", status: 404 });
   }
-  const comments = await query;
-  return res.sendJson(comments);
+  const comments = await query.lean();
+  return res.sendJson(removeFieldsFromArrayOfObjects(comments));
 };
 
 exports.getCommentById = async (req, res, next) => {
@@ -75,11 +73,9 @@ exports.getCommentById = async (req, res, next) => {
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
-  } else {
-    query = query.select('-__v');
   }
 
-  const comment = await query;
+  const comment = await query.lean();
   if (!comment) {
     throw new APIError({
       status: 404,
@@ -96,14 +92,14 @@ exports.updateComment = async (req, res, next) => {
     { _id },
     { comment: payload.comment },
     { new: true }
-  );
+  ).lean();
   if (!comment) {
     throw new APIError({
       status: 404,
       message: 'No such comment found with given Id',
     });
   }
-  return res.sendJson(comment);
+  return res.sendJson(removeFields(comment));
 };
 
 exports.deleteComment = async (req, res, next) => {
@@ -134,11 +130,11 @@ exports.deleteComment = async (req, res, next) => {
       deletedAt: Date.now(),
     };
 
-    const comment = await Comment.findOneAndUpdate(
+    await Comment.findOneAndUpdate(
       { _id: req.params._id },
       { $set: updatePayload },
       { new: true }
-    );
+    ).lean();
     return res.sendJson("Comment Deleted successfully.");
   } else {
     throw new APIError({

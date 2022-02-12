@@ -13,7 +13,7 @@ exports.login = async (req, res, next) => {
         if (err) return next(err);
         const tokenBody = { _id: user._id, role: user.role };
         const token = await issueToken({ user: tokenBody });
-        return res.status(200).json({ status: true, token: `Bearer ${token}` });
+        return res.sendJson({ token: `Bearer ${token}` });
       });
     } catch (error) {
       next(error);

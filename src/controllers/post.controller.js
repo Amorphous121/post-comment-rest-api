@@ -13,7 +13,7 @@ exports.createPost = async (req, res) => {
     { _id: req.user._id },
     { $addToSet: { posts: post._id } }
   ).lean();
-  return res.sendJson(removeFields(post), 201);
+  return res.sendJson(removeFields(post.toObject()), 201);
 };
 
 exports.getAllPosts = async (req, res, next) => {
@@ -33,8 +33,6 @@ exports.getAllPosts = async (req, res, next) => {
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
-  } else {
-    query = query.select('-__v');
   }
 
   const page = req.query.page * 1 || 1;
@@ -48,7 +46,7 @@ exports.getAllPosts = async (req, res, next) => {
     if (skip >= numOfRecords)
       throw new APIError({ status: 404, message: "This page doesn't exist." });
   }
-  const posts = await query;
+  const posts = await query.lean();
   return res.sendJson(removeFieldsFromArrayOfObjects(posts));
 };
 
@@ -59,16 +57,15 @@ exports.getPostById = async (req, res, next) => {
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
-  } else {
-    query = query.select('-__v');
   }
-  const post = await query;
+  
+  const post = await query.lean();
   if (!post)
     throw new APIError({
       status: 404,
       message: 'No such post exists with given Id.',
     });
-  return res.sendJson(post);
+  return res.sendJson(removeFields(post));
 };
 
 exports.updatePost = async (req, res, next) => {
@@ -83,7 +80,7 @@ exports.updatePost = async (req, res, next) => {
 
   const post = await Post.findOneAndUpdate({ _id: req.params.id }, req.body, {
     new: true,
-  });
+  }).lean();
   return res.sendJson(removeFields(post), 200);
 };
 
@@ -105,8 +102,8 @@ exports.deletePost = async (req, res, next) => {
     deletedBy: req.user._id,
     deletedAt: new Date(),
   };
-  await Comment.updateMany({ post: req.params.id }, updatePayload);
-  await Post.findOneAndUpdate({ _id: req.params.id }, updatePayload);
+  await Comment.updateMany({ post: req.params.id }, updatePayload).lean();
+  await Post.findOneAndUpdate({ _id: req.params.id }, updatePayload).lean();
 
   return res.sendJson('Post deleted successfully.', 200);
 };

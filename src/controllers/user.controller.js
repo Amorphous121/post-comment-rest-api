@@ -10,9 +10,7 @@ exports.createUser = async (req, res) => {
   const { email } = req.body;
   const isUserExists = await User.exists({ email });
   if (isUserExists) {
-    return res
-      .status(400)
-      .json({ message: `User with ${email} already exists` });
+    throw new APIError({ status: 400, message: `Email is already in use.` });
   }
 
   const user = await User.create(req.body);
@@ -44,9 +42,7 @@ exports.getAllUsers = async (req, res, next) => {
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
-  } else {
-    query = query.select('-__v');
-  }
+  } 
 
   /* 4) Pagination */
   const page = req.query.page * 1 || 1;
@@ -61,9 +57,9 @@ exports.getAllUsers = async (req, res, next) => {
       throw new APIError({ message: "This page doesn't exists.", status: 404 });
   }
 
-  const users = await query;
+  const users = await query.lean();
   return res.sendJson(
-    removeFieldsFromArrayOfObjects(users, ['password'], true)
+    removeFieldsFromArrayOfObjects(users, ['password'])
   );
 };
 
@@ -79,17 +75,15 @@ exports.getUserById = async (req, res, next) => {
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
     query = query.select(fields);
-  } else {
-    query = query.select('-__v');
   }
 
-  const user = await query;
+  const user = await query.lean();
   if (!user)
     throw new APIError({
       status: 404,
       message: 'No such user found with given Id.',
     });
-  return res.sendJson(user);
+  return res.sendJson(removeFields(user, 'password'));
 };
 
 exports.updateUser = async (req, res, next) => {
@@ -118,7 +112,8 @@ exports.updateUser = async (req, res, next) => {
 
   const user = await User.findOneAndUpdate({ _id }, payload, {
     new: true,
-  });
+  }).lean();
+
   return res.sendJson(
     removeFields(user, ['password', 'posts', 'comments']),
     200
@@ -148,8 +143,8 @@ exports.deleteUser = async (req, res, next) => {
   await Post.updateMany({ author: user._id }, updateData).lean();
   await Comment.updateMany(
     { $or: [{ createdBy: user._id }, { post: { $in: user.posts } }] },
-    updateData
+    { $set: updateData }
   ).lean();
 
-  return res.sendJson('User deleted successfully', 200);
+  return res.sendJson('User deleted successfully');
 };
