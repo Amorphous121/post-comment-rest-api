@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const jwt = require('jsonwebtoken');
 const { appConfig } = require('../config');
 
@@ -16,3 +17,20 @@ exports.issueToken = data => {
     );
   });
 };
+
+exports.removeFields = (object, keys = [], defaultFields = true) => {
+  const basicFields = ['deletedAt', 'deletedBy', 'isDeleted', '__v'];
+  keys = typeof keys === 'string' ? [keys] : keys || [];
+  if (defaultFields) keys = keys.concat(basicFields);
+  return _.omit(object, keys);
+};
+
+exports.removeFieldsFromArrayOfObjects = (
+  array = [],
+  keys = [],
+  defaultFields = true
+) => {
+  return array.map(item => this.removeFields(item, keys, defaultFields));
+};
+
+exports.userIsAdmin = user => user.role === 'admin';

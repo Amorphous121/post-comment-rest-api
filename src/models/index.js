@@ -5,5 +5,5 @@ const Comment = require('./comment.model');
 module.exports = {
   User,
   Post,
-  Comment
+  Comment,
 };

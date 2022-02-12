@@ -14,7 +14,7 @@ passport.use(
     },
     async (email, password, done) => {
       try {
-        const user = await User.findOne({ email, isDeleted: false });
+        const user = await User.findOne({ email });
         if (!user) return done(null, false, { message: "User doesn't exits." });
 
         const isValidPassword = await user.comparePassword(password);
@@ -39,7 +39,6 @@ passport.use(
     async (token, done) => {
       const isUserExists = await User.exists({
         _id: token.user._id,
-        isDeleted: false,
       });
       if (!isUserExists)
         return done(null, false, { message: 'Invalid Token.' });

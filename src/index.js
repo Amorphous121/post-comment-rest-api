@@ -6,15 +6,24 @@ const { appConfig, connectDatabase } = require('./config');
 const server = http.createServer(app);
 
 server.listen(appConfig.port, () => {
-  connectDatabase().then(() => {
-    console.log(
-      '\n',
-      chalk.bgRedBright.whiteBright(`Database status  `),
-      chalk.bgGreen.whiteBright(`   Connected   `),
-      '\n',
-      chalk.bgRedBright.whiteBright(`Server status    `),
-      chalk.bgGreen.whiteBright(`   Connected At ${appConfig.port}   `),
-      "\n"
-    );
-  });
+  connectDatabase()
+    .then(() => {
+      console.log(
+        '\n',
+        chalk.bgGrey.whiteBright(`   Database status   `),
+        chalk.bgGreen.whiteBright(`   Connected   `),
+        '\n',
+        chalk.bgGrey.whiteBright(`   Server status     `),
+        chalk.bgGreen.whiteBright(`   Connected At ${appConfig.port}   `),
+        '\n'
+      );
+    })
+    .catch(err => {
+      console.log(
+        '\n',
+        chalk.bgGrey.whiteBright(`Database Error  `),
+        chalk.bgRedBright.whiteBright(`   ${err.message}   `),
+        '\n'
+      );
+    });
 });
