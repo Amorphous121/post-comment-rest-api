@@ -7,6 +7,7 @@ const {
 } = require('../utils/helper');
 
 exports.createUser = async (req, res) => {
+  
   const { email } = req.body;
   const isUserExists = await User.exists({ email });
   if (isUserExists) {
@@ -18,13 +19,12 @@ exports.createUser = async (req, res) => {
 };
 
 exports.getAllUsers = async (req, res, next) => {
+
   let queryObject = { ...req.query };
+
+  /* Basic Filtering */
   const excludeFields = ['page', 'sort', 'limit', 'fields'];
   excludeFields.forEach(el => delete queryObject[el]);
-
-  if (queryObject.firstName) {
-    queryObject.firstName = new RegExp(`${queryObject.firstName}`, 'ig');
-  }
 
   let query = User.find({ ...queryObject })
     .populate('posts', '-isDeleted -deletedAt -__v')
@@ -33,9 +33,8 @@ exports.getAllUsers = async (req, res, next) => {
   /* 2) Sorting */
   if (req.query.sort) {
     const sortBy = req.query.sort.split(',').join(' ');
+    console.log('sortby ==> ', sortBy)
     query = query.sort(sortBy);
-  } else {
-    query = query.sort('-createdAt');
   }
 
   /* 3) Limiting the fields ( projection ) */
@@ -83,7 +82,7 @@ exports.getUserById = async (req, res, next) => {
       status: 404,
       message: 'No such user found with given Id.',
     });
-  return res.sendJson(removeFields(user, 'password'));
+  return res.sendJson(removeFields(user, ['password']));
 };
 
 exports.updateUser = async (req, res, next) => {

@@ -29,10 +29,19 @@ UserSchema.pre('save', async function (next) {
   next();
 });
 
-UserSchema.pre(/\b(find|findOne|exists|countDocuments)\b/, function (next) {
+UserSchema.pre(/\b(find|findOne|countDocuments|findById)\b/, function (next) {
+  
+  
   if (!this._conditions['isDeleted']) {
     this._conditions['isDeleted'] = false;
   }
+  
+  if (this.op === 'find' && !this['options']['sort']) {
+    this['options']['sort'] = { createdAt: -1 };
+  }
+
+  console.log(this.options);
+
   next();
 });
 
