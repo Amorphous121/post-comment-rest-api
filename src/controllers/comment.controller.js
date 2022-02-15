@@ -1,7 +1,20 @@
+const express = require('express');
 const { Comment, User, Post } = require('../models');
-const { userIsAdmin, removeFields, removeFieldsFromArrayOfObjects } = require('../utils/helper');
 const APIError = require('../utils/APIError');
+const {
+  userIsAdmin,
+  removeFields,
+  removeFieldsFromArrayOfObjects,
+} = require('../utils/helper');
 
+/**
+ * This function will create a comment for given post.
+ * @function createComment
+ * @param {express.Request} req Express Request Object
+ * @param {express.Response} res Express Response Object
+ * @param {express.NextFunction} next Express NextFunction Callback
+ * @returns {Promise<Object>} Comment Object
+ */
 exports.createComment = async (req, res, next) => {
   const payload = req.body;
   const isPostExists = await Post.exists({
@@ -29,6 +42,14 @@ exports.createComment = async (req, res, next) => {
   return res.sendJson(removeFields(comment), 201);
 };
 
+/**
+ * Returns a list of all comments.
+ * @function getAllComments
+ * @param {express.Request} req Express Request Object
+ * @param {express.Response} res Express Response Object
+ * @param {express.NextFunction} next Express NextFunction Callback
+ * @returns {Promise<Object>} List of Comments.
+ */
 exports.getAllComments = async (req, res, next) => {
   const queryObject = { ...req.query };
   const excludedFields = ['page', 'sort', 'limit', 'fields'];
@@ -52,7 +73,6 @@ exports.getAllComments = async (req, res, next) => {
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || 10;
   const skip = (page - 1) * limit;
-
   query = query.skip(skip).limit(limit);
 
   if (req.query.page) {
@@ -64,9 +84,17 @@ exports.getAllComments = async (req, res, next) => {
   return res.sendJson(removeFieldsFromArrayOfObjects(comments));
 };
 
+/**
+ * Returns a comment object identified by id.
+ * @function getCommentById
+ * @param {express.Request} req Express Request Object
+ * @param {express.Response} res Express Response Object
+ * @param {express.NextFunction} next Express NextFunction Callback
+ * @returns {Promise<Object>} Comment Object
+ */
 exports.getCommentById = async (req, res, next) => {
   const _id = req.params.id;
-  let query = Comment.findOne({ _id }, '-isDeleted -deletedAt -deletedBy');
+  let query = Comment.findOne({ _id });
 
   if (req.query.fields) {
     const fields = req.query.fields.split(',').join(' ');
@@ -83,6 +111,14 @@ exports.getCommentById = async (req, res, next) => {
   return res.sendJson(removeFields(comment));
 };
 
+/**
+ * This function updates the comment identified by id.
+ * @function updateComment
+ * @param {express.Request} req Express Request Object
+ * @param {express.Response} res Express Response Object
+ * @param {express.NextFunction} next Express NextFunction Callback
+ * @returns {Promise<Object>} Comment Object
+ */
 exports.updateComment = async (req, res, next) => {
   const _id = req.params.id;
   const payload = req.body;
@@ -100,6 +136,14 @@ exports.updateComment = async (req, res, next) => {
   return res.sendJson(removeFields(comment));
 };
 
+/**
+ * This function deletes the comment identified by id.
+ * @function deleteComment
+ * @param {express.Request} req Express Request Object
+ * @param {express.Response} res Express Response Object
+ * @param {express.NextFunction} next Express NextFunction Callback
+ * @returns {Promise<Object>} Success response of comment deletion.
+ */
 exports.deleteComment = async (req, res, next) => {
   const commentInfo = await Comment.findOne({ _id: req.params.id }).lean();
   if (!commentInfo) {
@@ -133,7 +177,7 @@ exports.deleteComment = async (req, res, next) => {
       { $set: updatePayload },
       { new: true }
     ).lean();
-    return res.sendJson("Comment Deleted successfully.");
+    return res.sendJson('Comment Deleted successfully.');
   } else {
     throw new APIError({
       status: 403,
