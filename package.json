@@ -9,7 +9,8 @@
   "scripts": {
     "start:prod": "cross-env NODE_ENV=production node src/index.js",
     "start:stage": "cross-env NODE_ENV=staging node src/index.js",
-    "start:dev": "cross-env NODE_ENV=development nodemon --trace-warnings src/index.js"
+    "start:dev": "cross-env NODE_ENV=development nodemon --trace-warnings src/index.js",
+    "docs": "jsdoc -d docs --configure jsdoc.config.json src/index.js"
   },
   "dependencies": {
     "bcrypt": "^5.0.1",
@@ -19,6 +20,7 @@
     "express-async-errors": "^3.1.1",
     "express-validation": "^3.0.8",
     "joi-objectid": "^4.0.2",
+    "jsdoc": "^3.6.10",
     "jsonwebtoken": "^8.5.1",
     "migrate-mongo": "^8.2.3",
     "mongoose": "^6.1.8",

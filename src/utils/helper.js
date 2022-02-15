@@ -1,3 +1,6 @@
+/**
+ * @module helper
+ */
 const _ = require('lodash');
 const jwt = require('jsonwebtoken');
 const { appConfig } = require('../config');

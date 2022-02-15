@@ -1,3 +1,10 @@
+/**
+ * @file This file manages the posts related to the user.
+ * @author Prathamesh Patil
+ * @copyright 01/02/2022
+ * @module Post
+ */
+
 const express = require('express');
 const APIError = require('../utils/APIError');
 const { Post, User, Comment } = require('../models');
