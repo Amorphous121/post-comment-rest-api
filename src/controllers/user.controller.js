@@ -1,3 +1,9 @@
+/**
+ * @author Prathamesh Patil
+ * @copyright 01/02/2022
+ * @module User
+ */
+
 const express = require('express');
 const { User, Post, Comment } = require('../models');
 const APIError = require('../utils/APIError');
