@@ -1,3 +1,10 @@
+/**
+ * @file This file manages the comment part of the application.
+ * @author Prathamesh Patil
+ * @copyright 01/02/2022
+ * @module Comment
+ */
+
 const express = require('express');
 const { Comment, User, Post } = require('../models');
 const APIError = require('../utils/APIError');

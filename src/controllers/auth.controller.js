@@ -1,3 +1,10 @@
+/**
+ * @file This file Manages Authentication part of application.
+ * @author Prathamesh Patil
+ * @copyright 01/02/2022
+ * @module Auth
+ */
+
 const bcrypt = require('bcrypt');
 const express = require('express');
 const JWT = require('jsonwebtoken');
