@@ -1,12 +1,15 @@
 const passport = require('passport');
+const APIError = require('../utils/APIError');
 
 exports.hasRole = (roles = []) => {
   if (typeof roles === 'string') roles = [roles];
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({ message: "You don't have sufficient access to this route." });
+      const err = new APIError({
+        status: 403,
+        message: "You don't have sufficient access to this route.",
+      });
+      next(err);
     }
     next();
   };
@@ -15,8 +18,7 @@ exports.hasRole = (roles = []) => {
 exports.isAuth = (req, res, next) => {
   passport.authenticate('jwt', { session: false }, async (err, user, info) => {
     if (err || !user) {
-      let err = new Error('invalid token');
-      err.status = 401;
+      let err = new APIError({ status: 400, message: 'Invalid token' });
       return next(err);
     }
     req.user = user;

@@ -18,6 +18,9 @@ CommentSchema.pre(/\b(find|findOne|exists|countDocuments)\b/, function (next) {
   if (!this._conditions['isDeleted']) {
     this._conditions['isDeleted'] = false;
   }
+  if (this.op === 'find' && !this['options']['sort']) {
+    this['options']['sort'] = { createdAt: -1 };
+  }
   next();
 });
 
